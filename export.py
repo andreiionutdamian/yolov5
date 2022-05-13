@@ -501,6 +501,7 @@ def run(
 
     # Load PyTorch model
     device = select_device(device)
+    LOGGER.info(f"\n{colorstr('PyTorch:')} Using device: {device}")
     if half:
         assert device.type != 'cpu' or coreml or xml, '--half only compatible with GPU export, i.e. use --device 0'
         assert not dynamic, '--half not compatible with --dynamic, i.e. use either --half or --dynamic but not both'
