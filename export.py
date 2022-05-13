@@ -108,21 +108,23 @@ def export_torchscript(model, im, file, optimize, prefix=colorstr('TorchScript:'
         str_config = json.dumps(dct_params)
         extra_files = {'config.txt': str_config}  # torch._C.ExtraFilesMap()
 
-        f = file.with_suffix('_{}x{}_s{}_b{}_{}_{}_ts.pt'.format(
+        f = file.with_suffix('')
+        fn = str(f)
+        fn = fn + '_{}x{}_s{}_b{}_{}_{}_ts.pt'.format(
           h, w, stride, batch_size, model_dtype,
           dev_type + dev_index.replace(':','')
-          ))
+          )
 
 
         ts = torch.jit.trace(model, im, strict=False)
         d = {"shape": im.shape, "stride": int(max(model.stride)), "names": model.names}
         extra_files = {'config.txt': json.dumps(d)}  # torch._C.ExtraFilesMap()
         if optimize:  # https://pytorch.org/tutorials/recipes/mobile_interpreter.html
-            optimize_for_mobile(ts)._save_for_lite_interpreter(str(f), _extra_files=extra_files)
+            optimize_for_mobile(ts)._save_for_lite_interpreter(str(fn), _extra_files=extra_files)
         else:
-            ts.save(str(f), _extra_files=extra_files)
+            ts.save(str(fn), _extra_files=extra_files)
 
-        LOGGER.info(f'{prefix} export success (opimize={optimize}), saved as {f} ({file_size(f):.1f} MB)')
+        LOGGER.info(f'{prefix} export success (opimize={optimize}), saved as {fn} ({file_size(fn):.1f} MB)')
         return f
     except Exception as e:
         LOGGER.info(f'{prefix} export failure: {e}')
@@ -604,7 +606,7 @@ def parse_opt():
     parser.add_argument('--conf-thres', type=float, default=0.25, help='TF.js NMS: confidence threshold')
     parser.add_argument('--include',
                         nargs='+',
-                        default=['torchscript', 'onnx'],
+                        default=['torchscript'],
                         help='torchscript, onnx, openvino, engine, coreml, saved_model, pb, tflite, edgetpu, tfjs')
     opt = parser.parse_args()
     print_args(vars(opt))
