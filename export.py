@@ -122,7 +122,7 @@ def export_torchscript(model, im, file, optimize, prefix=colorstr('TorchScript:'
         else:
             ts.save(str(f), _extra_files=extra_files)
 
-        LOGGER.info(f'{prefix} export success, saved as {f} ({file_size(f):.1f} MB)')
+        LOGGER.info(f'{prefix} export success (opimize={optimize}), saved as {f} ({file_size(f):.1f} MB)')
         return f
     except Exception as e:
         LOGGER.info(f'{prefix} export failure: {e}')
