@@ -92,15 +92,18 @@ def run(
     model = DetectMultiBackend(weights, device=device, dnn=dnn, data=data, fp16=half)
     stride, names, pt = model.stride, model.names, model.pt
     imgsz = check_img_size(imgsz, s=stride)  # check image size
+    if jit and ts_params and imgsz != [ts_h, ts_w]:
+        print(f"Changing resolution from {imgsz} to {[ts_h, ts_w]} based to graph defaults")
+        imgsz = ts_h, ts_w
 
     # Dataloader
     if webcam:
         view_img = check_imshow()
         cudnn.benchmark = True  # set True to speed up constant image size inference
-        dataset = LoadStreams(source, img_size=imgsz, stride=stride, auto=pt)
+        dataset = LoadStreams(source, img_size=imgsz, stride=stride, auto=pt and not jit)
         bs = len(dataset)  # batch_size
     else:
-        dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt)
+        dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt and not jit)
         bs = 1  # batch_size
     vid_path, vid_writer = [None] * bs, [None] * bs
 

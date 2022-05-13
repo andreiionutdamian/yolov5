@@ -90,9 +90,18 @@ def export_formats():
 
 def export_torchscript(model, im, file, optimize, prefix=colorstr('TorchScript:')):
     # YOLOv5 TorchScript model export
+    import json  # required to save graph props
     try:
         LOGGER.info(f'\n{prefix} starting export with torch {torch.__version__}...')
         f = file.with_suffix('.torchscript')
+
+        h, w = im.shape[-2:]
+        batch_size = im.shape[0]
+        stride = int(max(model.stride))
+        dev_type = next(model.parameters()).device.type
+        dct_params = {"HW": [h, w], "BATCH": batch_size, "STRIDE": stride, "DEVICE": dev_type}
+        str_config = json.dumps(dct_params)
+        extra_files = {'config.txt': str_config}  # torch._C.ExtraFilesMap()
 
         ts = torch.jit.trace(model, im, strict=False)
         d = {"shape": im.shape, "stride": int(max(model.stride)), "names": model.names}
@@ -565,7 +574,7 @@ def parse_opt():
     parser.add_argument('--weights', nargs='+', type=str, default=ROOT / 'yolov5s.pt', help='model.pt path(s)')
     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640, 640], help='image (h, w)')
     parser.add_argument('--batch-size', type=int, default=1, help='batch size')
-    parser.add_argument('--device', default='cpu', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
+    parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--half', action='store_true', help='FP16 half-precision export')
     parser.add_argument('--inplace', action='store_true', help='set YOLOv5 Detect() inplace=True')
     parser.add_argument('--train', action='store_true', help='model.train() mode')
