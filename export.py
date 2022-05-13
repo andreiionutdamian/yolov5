@@ -93,15 +93,26 @@ def export_torchscript(model, im, file, optimize, prefix=colorstr('TorchScript:'
     import json  # required to save graph props
     try:
         LOGGER.info(f'\n{prefix} starting export with torch {torch.__version__}...')
-        f = file.with_suffix('.torchscript')
 
         h, w = im.shape[-2:]
         batch_size = im.shape[0]
         stride = int(max(model.stride))
-        dev_type = next(model.parameters()).device.type
-        dct_params = {"HW": [h, w], "BATCH": batch_size, "STRIDE": stride, "DEVICE": dev_type}
+        model_param = next(model.parameters())
+        model_dev = model_param.device 
+        model_dtype = str(model_param.dtype).split('.')[-1]
+        dev_type = model_dev.type
+        dev_index = ''
+        if dev_type == 'cuda':
+          dev_index = ":" + str(model_dev.index) if model_dev.index is not None else ":0"
+        dct_params = {"HW": [h, w], "BATCH": batch_size, "STRIDE": stride, "DEVICE": dev_type + dev_index}
         str_config = json.dumps(dct_params)
         extra_files = {'config.txt': str_config}  # torch._C.ExtraFilesMap()
+
+        f = file.with_suffix('_{}x{}_s{}_b{}_{}_{}_ts.pt'.format(
+          h, w, stride, batch_size, model_dtype,
+          dev_type + dev_index.replace(':','')
+          ))
+
 
         ts = torch.jit.trace(model, im, strict=False)
         d = {"shape": im.shape, "stride": int(max(model.stride)), "names": model.names}
